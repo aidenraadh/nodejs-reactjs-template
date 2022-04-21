@@ -1,82 +1,91 @@
-const bcrypt        = require('bcrypt') 
-const User          = require('../models/index').User
-const {Op}          = require("sequelize")
-const {checkSchema} = require('express-validator')
-
-exports.show = async (req, res) => {    
-    try{
-        res.send({user: req.user})
-    }
-    catch(err){
-        console.log(err)
-        res.status(500).send(err)
-    }
-}
+const models     = require('../models/index')
+const User       = models.User
+const bcrypt     = require('bcrypt') 
+const Joi        = require('joi')
+const filterKeys = require('../utils/filterKeys')
+const logger     = require('../utils/logger')
 
 exports.update = async (req, res) => {
     try{
-        await User.update({
-            name: req.body.name, email: req.body.email,
-            password: await bcrypt.hash(req.body.password, 10)
-        }, {
-            where: {id: req.user.id}
-        })
+        // Validate the input
+        const {values, errMsg} = await validateInput(req, [
+            'name', 'oldPassword', 'newPassword'
+        ]) 
+        if(errMsg){
+            return res.status(400).send({message: errMsg})
+        }        
+        // Get user
+        const user = await User.findOne({
+            where: {id: req.user.id},
+        })         
+        // Update the user
+        user.name = values.name
+        if(values.newPassword !== ''){
+            user.password = values.newPassword
+        }
+        await user.save()
+
         res.send({
-            user: await User.findOne({where: {id: req.user.id}})
+            user: user,
+            message: 'Success updating profile'
         })     
     }catch(err){
-        console.log(err)
-        res.status(500).send(err)
+        logger.error(err, {errorObj: err})
+        res.status(500).send({message: err.message})
     }  
 }
 
-exports.updateRules = checkSchema({
-    name: {
-        notEmpty: true, errorMessage: 'Name is required',
-    },
-    email: {
-        isEmail: {
-            bail: true, errorMessage: 'New email is not valid',
-        },
-        custom: {
-            bail: true,
-            options: (value, {req}) => {
-                return User
-                    .findOne({where: {
-                        [Op.not]: {id: req.user.id}, email: value,
-                    }})
-                    .then(user => {
-                        if(user){
-                            return Promise.reject('New e-mail already in use')
-                        }
-                    })
-            },
-        },                
-    },
-    password: {
-        isLength: {
-            bail: true, options: {min: 8},
-            errorMessage: 'New password should be at least 8 chars long',
-        },
-    },  
-    oldPassword: {
-        isLength: {
-            bail: true, options: {min: 8},
-            errorMessage: 'Old password should be at least 8 chars long',
-        },
-        custom: {
-            bail: true,
-            options: (value, {req}) => {
-                return User.scope('withPassword')
-                    .findOne({where: {
-                        id: req.user.id
-                    }})
-                    .then(async user => {
-                        if(!await bcrypt.compare(value, user.password)){
-                            return Promise.reject("Old password doesn't match")
-                        }
-                    })
-            },
-        },            
-    },      
-})
+/**
+ * 
+ * @param {object} req - The request body
+ * @param {array} input - Key name of the user input
+ * @returns {object} - Validated and sanitized input with error message
+ */
+
+ const validateInput = async (req, inputKeys) => {
+    try {
+        const input = filterKeys(req.body, inputKeys)
+        const rules = {         
+            // Validate the user's name
+            name: Joi.string().required().trim().max(100).messages({
+                'string.max': "The user's name must below 100 characters",
+            }),             
+            // Make the user's old password match
+            oldPassword: Joi.string().required().trim().allow('', null).external(async (value, helpers) => {
+                console.log(req.user.password)
+                if(value === ''){ return value }
+                if(!await bcrypt.compare(value, req.user.password)){
+                    throw {message: "The old password doesn't match"}
+                }                
+                return value
+            }),     
+            // Make the user's new password is different from old password
+            newPassword: Joi.string().required().trim().allow('', null).external(async (value, helpers) => {
+                // If the password is not changed
+                if(value === '' && req.body.oldPassword === ''){ return value }
+                // If the password is empty but old password is not
+                if(value === '' && req.body.oldPassword !== ''){
+                    throw {message: "New password must be filled if the old password is filled"}
+                }              
+                if(value === req.body.oldPassword){
+                    throw {message: "The new password must be different"}
+                }                     
+                const hashedNewPassword = await bcrypt.hash(
+                    value, 10
+                )                           
+                return hashedNewPassword
+            }),                         
+        }
+        // Create the schema based on the input key
+        const schema = {}
+        for(const key in input){
+            if(rules.hasOwnProperty(key)){ schema[key] = rules[key] }
+        }        
+        // Validate the input
+        const values = await Joi.object(schema).validateAsync(input)
+
+        return {values: values}
+    } catch (err) {
+        return {errMsg: err.message}
+    }    
+}

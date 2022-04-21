@@ -4,27 +4,30 @@ import {BrowserRouter as Router, Switch, Route} from 'react-router-dom'
 
 import Navigation from './components/Navigation'
 import ProtectedRoute from './components/ProtectedRoute'
+import {getUser} from './components/Auth'
 
-import LoginView from './components/views/LoginView'
-import RegisterView from './components/views/RegisterView'
-import HomeView from './components/views/HomeView'
-import ProfileView from './components/views/ProfileView'
-import NotFoundView from './components/views/NotFoundView'
-
-import "./index.css";
+import LoginPage from './components/pages/LoginPage'
+import RegisterPage from './components/pages/RegisterPage'
+import HomePage from './components/pages/HomePage'
+import ProfilePage from './components/pages/ProfilePage'
+import NotFoundPage from './components/pages/NotFoundPage'
 
 function App(){
+    const user = getUser()
+    console.log(user)
     return (
         <ErrorBoundary>
             <Router>
                 <Navigation/>
                 <Switch>
-                    <Route path="/register" exact component={RegisterView}/>
-                    <Route path="/login" exact component={LoginView}/>
-                    <ProtectedRoute path={'/'} exact component={HomeView}/>
-                    <ProtectedRoute path={'/profile'} exact component={ProfileView}/>                    
+                    <Route path="/register" exact component={RegisterPage}/>
+                    <Route path="/login" exact component={LoginPage}/>
+                    <ProtectedRoute path={'/'} exact component={HomePage}/>
+                    <ProtectedRoute path={'/profile'} exact component={ProfilePage} props={{
+                        user: user
+                    }}/>                    
                     
-                    <Route path={'*'} component={NotFoundView}/>
+                    <Route path={'*'} component={NotFoundPage}/>
                 </Switch>
             </Router>
         </ErrorBoundary>

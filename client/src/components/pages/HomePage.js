@@ -1,4 +1,3 @@
-import {api, errorHandler} from '../Utils.js'
 import {logout} from '../Auth'
 
 function HomeView(props){

@@ -2,6 +2,7 @@ const JwtStrategy = require('passport-jwt').Strategy
 const ExtractJwt  = require('passport-jwt').ExtractJwt
 const path        = require('path')
 const fs          = require('fs')
+const logger      = require('../utils/logger')
 const User        = require('../models/index').User
 
 const pathToKey = path.join(__dirname, '..', 'id_rsa_pub.pem')
@@ -15,15 +16,15 @@ const opts = {
 
 const authenticate = async (payload, done) => {  
     try{
-        const user = await User.findOne({where: {id: payload.sub}})
+        const user = await User.scope('withPassword').findOne({where: {id: payload.sub}})
         // When the user not found
         if(!user){
             return done(null, false)
         }
         return done(null, user)
     } catch (err){
-        console.log(err)
-        res.status(500).send(err)
+        logger.error(err, {errObj: err})
+        throw err
     }    
 }
 

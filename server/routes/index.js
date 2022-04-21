@@ -1,22 +1,16 @@
 const rootRouter      = require('express').Router()
-const authController  = require('../controllers/authController')
-const userController  = require('../controllers/userController')
+const AuthController  = require('../controllers/AuthController')
+const UserController  = require('../controllers/UserController')
 const isAuth          = require('../middlewares/isAuth')
 const isNotAuth       = require('../middlewares/isNotAuth')
-const validate        = require('../middlewares/validate')
 
 rootRouter.post('/register', [
-    isNotAuth, authController.registerRules, 
-    validate, authController.register
+    isNotAuth, AuthController.register
 ])
 rootRouter.post('/login', [
-    isNotAuth, authController.login
-])
-rootRouter.get('/profile', [
-    isAuth, userController.show
+    isNotAuth, AuthController.login
 ])
 rootRouter.put('/profile', [
-    isAuth, userController.updateRules, 
-    validate, userController.update
+    isAuth, UserController.update
 ])
 module.exports = rootRouter
