@@ -1,9 +1,9 @@
-const jwt           = require('jsonwebtoken')
-const bcrypt        = require('bcrypt') 
-const logger        = require('../utils/logger')
-const path          = require('path')
-const fs            = require('fs')
-const User          = require('../models/index').User
+const jwt    = require('jsonwebtoken')
+const bcrypt = require('bcrypt') 
+const logger = require('../utils/logger')
+const path   = require('path')
+const fs     = require('fs')
+const User   = require('../models/index').User
 
 exports.register = async (req, res) => {    
     try{     
