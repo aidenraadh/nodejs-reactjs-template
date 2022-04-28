@@ -12,6 +12,8 @@ import HomePage from './components/pages/HomePage'
 import ProfilePage from './components/pages/ProfilePage'
 import NotFoundPage from './components/pages/NotFoundPage'
 
+import 'index.css'
+
 function App(){
     const user = getUser()
     console.log(user)
