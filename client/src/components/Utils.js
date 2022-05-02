@@ -1,11 +1,13 @@
 import axios from 'axios'
 import {logout} from './Auth'
 
+const hostname = window.location.hostname
+
 export const api = axios.create({
     baseURL: process.env.REACT_APP_SERVER_URL || '/api',
     withCredentials: true,
     headers: {
-        Authorization: localStorage.getItem('jwt_token')
+        Authorization: localStorage.getItem(`${hostname}_jwt_token`)
     }    
 })
 
@@ -35,7 +37,7 @@ export const errorHandler = (error, handler = {}) => {
  */
 
 export const saveResFilters = (key, filters) => {
-	let resourceFilters = localStorage.getItem('resource_filters')
+	let resourceFilters = localStorage.getItem(`${hostname}_resource_filters`)
 	filters = filters ? {...filters} : {}
 	// Create resource_filter storage if it not exist
 	if(!resourceFilters){
@@ -45,7 +47,7 @@ export const saveResFilters = (key, filters) => {
 		resourceFilters = JSON.parse(resourceFilters)
 	}
 	resourceFilters[key] = {...filters}
-	localStorage.setItem('resource_filters', JSON.stringify(resourceFilters))
+	localStorage.setItem(`${hostname}_resource_filters`, JSON.stringify(resourceFilters))
 }
 
 /**
@@ -55,7 +57,7 @@ export const saveResFilters = (key, filters) => {
  */
 
 export const getResFilters = (key) => {
-	let resourceFilters = localStorage.getItem('resource_filters')
+	let resourceFilters = localStorage.getItem(`${hostname}_resource_filters`)
 	if(!resourceFilters){
 		resourceFilters = {}
 	}
